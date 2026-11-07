@@ -25,7 +25,7 @@ function sendNtfy({ topic, title, message, email, click, tags = 'airplane', toke
  * Anahtar SENDGRID_API_KEY ortam değişkeninden okunur; "from" SendGrid'de doğrulanmış
  * bir gönderici olmalıdır (SENDGRID_FROM veya --email-from).
  */
-function sendEmailSendGrid({ to, from, subject, text, apiKey = process.env.SENDGRID_API_KEY, fromName = 'Uçuş Fiyat Takibi' }) {
+function sendEmailSendGrid({ to, from, subject, text, html, apiKey = process.env.SENDGRID_API_KEY, fromName = 'Uçuş Fiyat Takibi' }) {
   if (!apiKey) throw new Error('SENDGRID_API_KEY tanımlı değil');
   if (!from) throw new Error('Gönderici adresi (SENDGRID_FROM / --email-from) gerekli');
   const recipients = String(to).split(',').map(s => s.trim()).filter(Boolean).map(email => ({ email }));
@@ -33,7 +33,7 @@ function sendEmailSendGrid({ to, from, subject, text, apiKey = process.env.SENDG
     personalizations: [{ to: recipients }],
     from: { email: from, name: fromName },
     subject,
-    content: [{ type: 'text/plain', value: text }],
+    content: [{ type: 'text/plain', value: text }, ...(html ? [{ type: 'text/html', value: html }] : [])],
     tracking_settings: { click_tracking: { enable: false, enable_text: false } },
   });
   const out = execFileSync('curl', ['-sS', '--max-time', '30', '-o', '-', '-w', '\n%{http_code}',

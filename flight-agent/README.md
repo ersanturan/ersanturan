@@ -103,7 +103,13 @@ npm run watch
 | `son-kontrol.md` | Son kontrolün tablosu: şimdi, önceki, değişim, başlangıç, en düşük, link |
 | `alert.md` | Yalnızca en az `--min-drop` € düşüş varsa oluşur; bildirim metni |
 
-Son satırdaki `WATCH_SUMMARY {...}` JSON'u düşüşleri makine-okunur verir.
+Son satırdaki `WATCH_SUMMARY {...}` JSON'u düşüş ve artışları makine-okunur verir.
+
+Bildirim ne zaman gider: `--notify-on change` (varsayılan) fiyatı düşen ya da artan
+bir tarih olduğunda, `drop` yalnızca düşüşte, `always` her kontrolde. Mesajda
+düşen ve artan tarihler dünkü → bugünkü fiyat, fark ve yüzde ile listelenir;
+ilk fiyata göre fark, şimdiye kadarki en düşük fiyat ve tüm tarihlerin tablosu da yer alır.
+E-posta hem düz metin hem renkli HTML tablo olarak gönderilir.
 
 Bildirim için ntfy.sh kullanılır, ayrı bir servis kurulumu gerekmez:
 

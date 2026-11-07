@@ -17,7 +17,9 @@
  *   alert.md        yalnızca düşüş varsa: bildirim metni (yoksa silinir)
  * Son satırda makine-okunur özet basılır:  WATCH_SUMMARY {"drops":[...], ...}
  *
- * Bildirim (isteğe bağlı): --ntfy-topic <gizli-konu> [--email adres] [--email-always]
+ * Bildirim (isteğe bağlı): --ntfy-topic <gizli-konu> [--email adres] [--notify-on change|drop|always]
+ *   Varsayılan "change": fiyat düşen veya artan tarih olduğunda gönderilir; mesajda tüm
+ *   artış/azalışlar, ilk fiyata göre fark ve en düşük fiyat yer alır.
  *   E-posta: SENDGRID_API_KEY (+ SENDGRID_FROM veya --email-from) tanımlıysa SendGrid ile,
  *   değilse NTFY_TOKEN ile ntfy.sh üzerinden gönderilir. --ntfy-topic olmadan da e-posta gider.
  *   Düşüş varsa (veya --email-always ile her kontrolde) ntfy.sh üzerinden bildirim ve
@@ -30,6 +32,7 @@ const { verifyRoundTrip, BlockedError, setPacing } = require('./scrape');
 const { runPool, log } = require('./pool');
 const { weekdayTr } = require('./combine');
 const { sendNtfy, sendEmailSendGrid } = require('./notify');
+const { buildChangeMessage } = require('./message');
 
 function parseArgs(argv) {
   const a = {};
@@ -133,7 +136,7 @@ async function check(args, dir) {
       scheduleChanged: p.scheduleChanged, outboundFlight: p.outboundFlight, inboundFlight: p.inboundFlight };
   });
   const drops = rows.filter(r => r.diff !== null && -r.diff >= wl.minDropEur);
-  const rises = rows.filter(r => r.diff !== null && r.diff > 0);
+  const rises = rows.filter(r => r.diff !== null && r.diff >= wl.minDropEur);
   const unavailable = rows.filter(r => !r.ok);
   const cheapest = rows.filter(r => r.ok).sort((a, b) => a.now - b.now)[0] || null;
   const cur = wl.currency;
@@ -163,34 +166,24 @@ async function check(args, dir) {
   // Bildirim / e-posta
   let notified = null;
   const wantEmail = !!args.email, viaSendGrid = wantEmail && !!process.env.SENDGRID_API_KEY;
-  if ((args['ntfy-topic'] || viaSendGrid) && (drops.length || args['email-always'])) {
-    const lines = [];
-    if (drops.length) {
-      lines.push(`Fiyatı düşen ${drops.length} tarih (2 yetişkin + 1 bebek, gidiş-dönüş toplam):`, '');
-      for (const d of drops.sort((x, y) => x.now - y.now)) {
-        lines.push(`• ${fmtDate(d.depDate)} → ${fmtDate(d.retDate)}: ${d.prev} → ${d.now} ${cur} (${d.diff} ${cur})${d.now <= d.lowest ? ' – şimdiye kadarki en düşük' : ''}`);
-        if (d.link) lines.push(`  ${d.link}`);
-      }
-    } else lines.push('Bugün fiyat düşüşü yok.');
-    lines.push('');
-    if (cheapest) lines.push(`Şu an en ucuz Cuma–Pazartesi: ${fmtDate(cheapest.depDate)} → ${fmtDate(cheapest.retDate)}, ${cheapest.now} ${cur}`);
-    lines.push(`Kontrol edilen: ${rows.length}, okunamayan: ${unavailable.length}. Uçuşlar AJet direkt ESB–CDG, kabin bagajı dahil değil.`);
-    lines.push('Tüm tablo: https://github.com/ersanturan/ersanturan/blob/HEAD/flight-agent/results/watch/son-kontrol.md');
-    const title = drops.length
-      ? `ESB–CDG fiyat düştü: ${drops.length} tarih, en düşük ${Math.min(...drops.map(d => d.now))} ${cur}`
-      : `ESB–CDG günlük kontrol: düşüş yok, en ucuz ${cheapest ? cheapest.now + ' ' + cur : '-'}`;
-    const text = lines.join('\n');
+  // Bildirim koşulu: --notify-on change (varsayılan: düşüş veya artış), drop (yalnız düşüş), always (her gün).
+  const notifyOn = args['email-always'] ? 'always' : (args['notify-on'] || 'change');
+  const shouldNotify = notifyOn === 'always' || drops.length > 0 || (notifyOn === 'change' && rises.length > 0);
+  if ((args['ntfy-topic'] || viaSendGrid) && shouldNotify) {
+    const msg = buildChangeMessage({ rows, drops, rises, unavailable, cheapest, cur, passengers: wl.passengers,
+      reportUrl: 'https://github.com/ersanturan/ersanturan/blob/HEAD/flight-agent/results/watch/son-kontrol.md' });
+    const title = msg.title, text = msg.text;
     notified = { ok: true };
     if (args['ntfy-topic']) {
       try {
-        const r = sendNtfy({ topic: args['ntfy-topic'], title, message: text, email: (wantEmail && !viaSendGrid) ? args.email : undefined, click: drops[0]?.link, tags: drops.length ? 'airplane,chart_with_downwards_trend' : 'airplane' });
+        const r = sendNtfy({ topic: args['ntfy-topic'], title, message: msg.short, email: (wantEmail && !viaSendGrid) ? args.email : undefined, click: drops[0]?.link, tags: drops.length ? 'airplane,chart_with_downwards_trend' : 'airplane' });
         notified.ntfy = { ok: true, id: r.id };
         log(`ntfy bildirimi gönderildi: ${r.id}`);
       } catch (e) { notified.ok = false; notified.ntfy = { ok: false, error: String(e.stdout || e.stderr || e.message).slice(0, 300) }; log(`!! ntfy bildirimi gönderilemedi: ${notified.ntfy.error}`); }
     }
     if (viaSendGrid) {
       try {
-        sendEmailSendGrid({ to: args.email, from: args['email-from'] || process.env.SENDGRID_FROM, subject: title, text });
+        sendEmailSendGrid({ to: args.email, from: args['email-from'] || process.env.SENDGRID_FROM, subject: title, text, html: msg.html });
         notified.email = { ok: true, via: 'sendgrid', to: args.email };
         log(`E-posta gönderildi (SendGrid): ${args.email}`);
       } catch (e) { notified.ok = false; notified.email = { ok: false, via: 'sendgrid', error: String(e.message).slice(0, 300) }; log(`!! E-posta gönderilemedi: ${notified.email.error}`); }
@@ -201,6 +194,7 @@ async function check(args, dir) {
   const summary = {
     at, checked: rows.length, ok: rows.length - unavailable.length, unavailable: unavailable.length, warnings,
     drops: drops.map(d => ({ depDate: d.depDate, retDate: d.retDate, prev: d.prev, now: d.now, diff: d.diff, allTimeLow: d.now <= d.lowest, link: d.link })),
+    rises: rises.map(d => ({ depDate: d.depDate, retDate: d.retDate, prev: d.prev, now: d.now, diff: d.diff })),
     cheapest: cheapest ? { depDate: cheapest.depDate, retDate: cheapest.retDate, now: cheapest.now } : null, currency: cur, notified,
   };
   console.log('WATCH_SUMMARY ' + JSON.stringify(summary));
