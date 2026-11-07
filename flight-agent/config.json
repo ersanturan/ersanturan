@@ -1,0 +1,23 @@
+{
+  "origin": ["ESB"],
+  "destination": ["CDG", "ORY"],
+  "startDate": "2027-02-01",
+  "endDate": "2027-03-31",
+  "minStay": 2,
+  "maxStay": 4,
+  "adults": 2,
+  "children": 0,
+  "infantsInSeat": 0,
+  "infantsOnLap": 1,
+  "maxStops": 0,
+  "seat": "economy",
+  "currency": "EUR",
+  "concurrency": 1,
+  "minDelayMs": 3000,
+  "maxDelayMs": 5000,
+  "cooldownSec": 120,
+  "maxCooldowns": 3,
+  "verifyTop": 20,
+  "outDir": "results",
+  "headless": true
+}
