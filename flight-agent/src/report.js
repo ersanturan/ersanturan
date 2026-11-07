@@ -11,10 +11,11 @@ function fmtDate(iso) { const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}
 function money(v, cur) { return v === null || v === undefined ? '-' : `${v.toLocaleString('tr-TR')} ${cur || ''}`.trim(); }
 function csvEscape(v) { const s = v === null || v === undefined ? '' : String(v); return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }
 
-function writeReports({ outDir, combos, oneWay, meta }) {
+function writeReports({ outDir, combos, oneWay, meta, label = '' }) {
   fs.mkdirSync(outDir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16);
-  const base = path.join(outDir, `alternatifler-${stamp}`);
+  const tag = label ? `-${label.replace(/[^a-z0-9_-]/gi, '_')}` : '';
+  const base = path.join(outDir, `alternatifler${tag}-${stamp}`);
 
   fs.writeFileSync(`${base}.json`, JSON.stringify({ meta, combos, oneWay }, null, 2));
 
@@ -29,7 +30,9 @@ function writeReports({ outDir, combos, oneWay, meta }) {
   md.push(`# ${meta.origin.join('/')} → ${meta.destination.join('/')} direkt uçuş alternatifleri`);
   md.push('');
   md.push(`- Tarama zamanı: ${meta.scannedAt}`);
-  md.push(`- Tarih aralığı: ${meta.startDate} – ${meta.endDate}, kalış ${meta.minStay}–${meta.maxStay} gün`);
+  const dn = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+  md.push(`- Tarih aralığı: gidiş ${meta.startDate} – ${meta.endDate}, son dönüş ${meta.returnBy}, kalış ${meta.minStay}–${meta.maxStay} gün`);
+  if (meta.departDays || meta.returnDays) md.push(`- Gün filtresi: gidiş ${meta.departDays ? meta.departDays.map(d => dn[d]).join('/') : 'her gün'}, dönüş ${meta.returnDays ? meta.returnDays.map(d => dn[d]).join('/') : 'her gün'}`);
   md.push(`- Yolcular: ${meta.passengers.adults} yetişkin, ${meta.passengers.children} çocuk, ${meta.passengers.infantsOnLap} kucakta bebek, ${meta.passengers.infantsInSeat} koltuklu bebek`);
   md.push(`- Fiyatlar tüm yolcular için toplamdır (${meta.currency}). Kaynak: Google Flights, ${meta.maxStops === 0 ? 'yalnızca direkt uçuşlar' : `en fazla ${meta.maxStops} aktarma`}.`);
   md.push(`- Taranan gün sayısı: gidiş ${meta.scannedOutboundDays}, dönüş ${meta.scannedInboundDays}. Direkt uçuş bulunan gün: gidiş ${meta.outboundDaysWithFlights}, dönüş ${meta.inboundDaysWithFlights}.`);
@@ -59,9 +62,9 @@ function writeReports({ outDir, combos, oneWay, meta }) {
     md.push('');
   }
   fs.writeFileSync(`${base}.md`, md.join('\n'));
-  fs.copyFileSync(`${base}.md`, path.join(outDir, 'son-tarama.md'));
-  fs.copyFileSync(`${base}.csv`, path.join(outDir, 'son-tarama.csv'));
-  fs.copyFileSync(`${base}.json`, path.join(outDir, 'son-tarama.json'));
+  fs.copyFileSync(`${base}.md`, path.join(outDir, `son-tarama${tag}.md`));
+  fs.copyFileSync(`${base}.csv`, path.join(outDir, `son-tarama${tag}.csv`));
+  fs.copyFileSync(`${base}.json`, path.join(outDir, `son-tarama${tag}.json`));
   return { md: `${base}.md`, csv: `${base}.csv`, json: `${base}.json` };
 }
 

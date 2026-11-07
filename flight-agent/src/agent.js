@@ -32,6 +32,15 @@ function parseArgs(argv) {
   return args;
 }
 
+// "fri,mon", "cuma,pazartesi", "5,1" gibi girdileri 0=Pazar..6=Cumartesi dizisine çevirir.
+const WEEKDAYS = { sun: 0, paz: 0, pazar: 0, mon: 1, pzt: 1, pazartesi: 1, tue: 2, sal: 2, sali: 2, 'salı': 2, wed: 3, car: 3, 'çar': 3, carsamba: 3, 'çarşamba': 3,
+  thu: 4, per: 4, persembe: 4, 'perşembe': 4, fri: 5, cum: 5, cuma: 5, sat: 6, cmt: 6, cumartesi: 6 };
+function parseWeekdays(v) {
+  if (v === undefined || v === null || v === '') return null;
+  const items = Array.isArray(v) ? v : String(v).split(',');
+  return items.map(x => { const k = String(x).trim().toLowerCase(); if (/^[0-6]$/.test(k)) return Number(k); if (k in WEEKDAYS) return WEEKDAYS[k]; throw new Error(`Bilinmeyen gün: ${x}`); });
+}
+
 function loadConfig(args) {
   const cfgPath = path.resolve(args.config || path.join(__dirname, '..', 'config.json'));
   const cfg = fs.existsSync(cfgPath) ? JSON.parse(fs.readFileSync(cfgPath, 'utf8')) : {};
@@ -60,6 +69,10 @@ function loadConfig(args) {
     maxCooldowns: num(args['max-cooldowns'], cfg.maxCooldowns ?? 3),
     verifyTop: num(args['verify-top'], cfg.verifyTop ?? 20),
     outDir: path.resolve(args.out || cfg.outDir || 'results'),
+    departDays: parseWeekdays(args['depart-days'] || cfg.departDays),
+    returnDays: parseWeekdays(args['return-days'] || cfg.returnDays),
+    returnBy: args['return-by'] || cfg.returnBy || null,
+    label: args.label || cfg.label || '',
     headless: args.headed ? false : (cfg.headless ?? true),
     noCache: !!args['no-cache'],
   };
@@ -73,8 +86,13 @@ async function main() {
   const readCache = k => (!cfg.noCache && fs.existsSync(cacheKey(k))) ? JSON.parse(fs.readFileSync(cacheKey(k), 'utf8')) : null;
   const writeCache = (k, v) => fs.writeFileSync(cacheKey(k), JSON.stringify(v));
 
-  const outDates = dateRange(cfg.startDate, cfg.endDate);
-  const inDates = dateRange(addDays(cfg.startDate, cfg.minStay), addDays(cfg.endDate, cfg.maxStay));
+  const wd = d => new Date(d + 'T00:00:00Z').getUTCDay();
+  const lastReturn = cfg.returnBy || addDays(cfg.endDate, cfg.maxStay);
+  const outDates = dateRange(cfg.startDate, cfg.endDate)
+    .filter(d => !cfg.departDays || cfg.departDays.includes(wd(d)))
+    .filter(d => addDays(d, cfg.minStay) <= lastReturn);
+  const inDates = dateRange(addDays(cfg.startDate, cfg.minStay), lastReturn)
+    .filter(d => !cfg.returnDays || cfg.returnDays.includes(wd(d)));
   log(`Tarama: ${cfg.origin.join('/')} → ${cfg.destination.join('/')}, gidiş ${cfg.startDate}..${cfg.endDate} (${outDates.length} gün), dönüş ${inDates[0]}..${inDates[inDates.length - 1]} (${inDates.length} gün)`);
   log(`Yolcu: ${JSON.stringify(cfg.passengers)}, aktarma ≤ ${cfg.maxStops}, para birimi ${cfg.currency}, eşzamanlı sayfa ${cfg.concurrency}, istekler arası ${cfg.minDelayMs}-${cfg.maxDelayMs} ms`);
 
@@ -157,12 +175,13 @@ async function main() {
   const meta = {
     scannedAt: new Date().toISOString(), origin: cfg.origin, destination: cfg.destination, startDate: cfg.startDate, endDate: cfg.endDate,
     minStay: cfg.minStay, maxStay: cfg.maxStay, passengers: cfg.passengers, maxStops: cfg.maxStops, currency: cfg.currency, verifyTop: toVerify.length,
+    departDays: cfg.departDays, returnDays: cfg.returnDays, returnBy: lastReturn,
     scannedOutboundDays: outDates.length, scannedInboundDays: inDates.length,
     outboundDaysWithFlights: Object.values(oneWay.outbound).filter(f => f.length).length,
     inboundDaysWithFlights: Object.values(oneWay.inbound).filter(f => f.length).length,
     warnings,
   };
-  const files = writeReports({ outDir: cfg.outDir, combos, oneWay, meta });
+  const files = writeReports({ outDir: cfg.outDir, combos, oneWay, meta, label: cfg.label });
   log(`Rapor yazıldı: ${files.md}`);
 
   // Konsola kısa özet
