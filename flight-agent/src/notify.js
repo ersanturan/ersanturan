@@ -20,4 +20,29 @@ function sendNtfy({ topic, title, message, email, click, tags = 'airplane', toke
   return JSON.parse(out);
 }
 
-module.exports = { sendNtfy };
+/**
+ * SendGrid v3 mail/send ile düz metin e-posta gönderir.
+ * Anahtar SENDGRID_API_KEY ortam değişkeninden okunur; "from" SendGrid'de doğrulanmış
+ * bir gönderici olmalıdır (SENDGRID_FROM veya --email-from).
+ */
+function sendEmailSendGrid({ to, from, subject, text, apiKey = process.env.SENDGRID_API_KEY, fromName = 'Uçuş Fiyat Takibi' }) {
+  if (!apiKey) throw new Error('SENDGRID_API_KEY tanımlı değil');
+  if (!from) throw new Error('Gönderici adresi (SENDGRID_FROM / --email-from) gerekli');
+  const recipients = String(to).split(',').map(s => s.trim()).filter(Boolean).map(email => ({ email }));
+  const body = JSON.stringify({
+    personalizations: [{ to: recipients }],
+    from: { email: from, name: fromName },
+    subject,
+    content: [{ type: 'text/plain', value: text }],
+    tracking_settings: { click_tracking: { enable: false, enable_text: false } },
+  });
+  const out = execFileSync('curl', ['-sS', '--max-time', '30', '-o', '-', '-w', '\n%{http_code}',
+    '-H', `Authorization: Bearer ${apiKey}`, '-H', 'Content-Type: application/json',
+    '-X', 'POST', '--data-binary', '@-', 'https://api.sendgrid.com/v3/mail/send'], { input: body, encoding: 'utf8' });
+  const lines = out.trimEnd().split('\n');
+  const code = Number(lines.pop());
+  if (code !== 202) throw new Error(`SendGrid ${code}: ${lines.join(' ').slice(0, 300)}`);
+  return { ok: true, status: code };
+}
+
+module.exports = { sendNtfy, sendEmailSendGrid };

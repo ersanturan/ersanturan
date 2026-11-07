@@ -18,7 +18,8 @@
  * Son satırda makine-okunur özet basılır:  WATCH_SUMMARY {"drops":[...], ...}
  *
  * Bildirim (isteğe bağlı): --ntfy-topic <gizli-konu> [--email adres] [--email-always]
- *   E-posta iletimi ntfy.sh hesabı ister: erişim anahtarı NTFY_TOKEN ortam değişkeniyle verilir.
+ *   E-posta: SENDGRID_API_KEY (+ SENDGRID_FROM veya --email-from) tanımlıysa SendGrid ile,
+ *   değilse NTFY_TOKEN ile ntfy.sh üzerinden gönderilir. --ntfy-topic olmadan da e-posta gider.
  *   Düşüş varsa (veya --email-always ile her kontrolde) ntfy.sh üzerinden bildirim ve
  *   e-posta gönderilir. Repo herkese açıksa adres ve konu repoya yazılmamalı, parametreyle verilmeli.
  */
@@ -28,7 +29,7 @@ const { launchBrowser } = require('./browser');
 const { verifyRoundTrip, BlockedError, setPacing } = require('./scrape');
 const { runPool, log } = require('./pool');
 const { weekdayTr } = require('./combine');
-const { sendNtfy } = require('./notify');
+const { sendNtfy, sendEmailSendGrid } = require('./notify');
 
 function parseArgs(argv) {
   const a = {};
@@ -161,7 +162,8 @@ async function check(args, dir) {
 
   // Bildirim / e-posta
   let notified = null;
-  if (args['ntfy-topic'] && (drops.length || args['email-always'])) {
+  const wantEmail = !!args.email, viaSendGrid = wantEmail && !!process.env.SENDGRID_API_KEY;
+  if ((args['ntfy-topic'] || viaSendGrid) && (drops.length || args['email-always'])) {
     const lines = [];
     if (drops.length) {
       lines.push(`Fiyatı düşen ${drops.length} tarih (2 yetişkin + 1 bebek, gidiş-dönüş toplam):`, '');
@@ -177,11 +179,22 @@ async function check(args, dir) {
     const title = drops.length
       ? `ESB–CDG fiyat düştü: ${drops.length} tarih, en düşük ${Math.min(...drops.map(d => d.now))} ${cur}`
       : `ESB–CDG günlük kontrol: düşüş yok, en ucuz ${cheapest ? cheapest.now + ' ' + cur : '-'}`;
-    try {
-      const r = sendNtfy({ topic: args['ntfy-topic'], title, message: lines.join('\n'), email: args.email || undefined, click: drops[0]?.link, tags: drops.length ? 'airplane,chart_with_downwards_trend' : 'airplane' });
-      notified = { ok: true, id: r.id, email: !!args.email };
-      log(`Bildirim gönderildi${args.email ? ' (e-posta dahil)' : ''}: ${r.id}`);
-    } catch (e) { notified = { ok: false, error: String(e.stderr || e.message).slice(0, 300) }; log(`!! Bildirim gönderilemedi: ${notified.error}`); }
+    const text = lines.join('\n');
+    notified = { ok: true };
+    if (args['ntfy-topic']) {
+      try {
+        const r = sendNtfy({ topic: args['ntfy-topic'], title, message: text, email: (wantEmail && !viaSendGrid) ? args.email : undefined, click: drops[0]?.link, tags: drops.length ? 'airplane,chart_with_downwards_trend' : 'airplane' });
+        notified.ntfy = { ok: true, id: r.id };
+        log(`ntfy bildirimi gönderildi: ${r.id}`);
+      } catch (e) { notified.ok = false; notified.ntfy = { ok: false, error: String(e.stdout || e.stderr || e.message).slice(0, 300) }; log(`!! ntfy bildirimi gönderilemedi: ${notified.ntfy.error}`); }
+    }
+    if (viaSendGrid) {
+      try {
+        sendEmailSendGrid({ to: args.email, from: args['email-from'] || process.env.SENDGRID_FROM, subject: title, text });
+        notified.email = { ok: true, via: 'sendgrid', to: args.email };
+        log(`E-posta gönderildi (SendGrid): ${args.email}`);
+      } catch (e) { notified.ok = false; notified.email = { ok: false, via: 'sendgrid', error: String(e.message).slice(0, 300) }; log(`!! E-posta gönderilemedi: ${notified.email.error}`); }
+    }
   }
 
   console.log(md.slice(0, 6).join('\n'));

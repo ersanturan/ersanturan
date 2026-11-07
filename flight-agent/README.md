@@ -116,6 +116,14 @@ NTFY_TOKEN=tk_... node src/watch.js --ntfy-topic <konu> --email adres@ornek.com 
 - ntfy.sh hesapsız e-posta göndermeye izin vermez. E-posta için ücretsiz bir
   ntfy.sh hesabında erişim anahtarı oluşturup `NTFY_TOKEN` olarak verin.
 - Repo herkese açıksa e-posta adresini ve konuyu repoya yazmayın, parametreyle verin.
+
+SendGrid ile e-posta (önerilen): `SENDGRID_API_KEY` ve doğrulanmış gönderici
+`SENDGRID_FROM` ortam değişkenleri tanımlıysa e-posta SendGrid ile gider; ntfy
+hesabı gerekmez. Anahtarı ortam ayarlarına gizli değişken olarak ekleyin.
+
+```bash
+SENDGRID_FROM=gonderen@alanadi.com node src/watch.js --email alici@ornek.com [--ntfy-topic <konu>]
+```
 Tarihi geçen kombinasyonlar otomatik atlanır. Günlük çalıştırma bir Claude
 zamanlanmış görevi ile yapılır: görev komutu çalıştırır, geçmişi repoya
 commit'ler ve düşüş varsa telefona bildirim gönderir.
