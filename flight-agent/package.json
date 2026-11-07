@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "description": "Google Flights'ı tarayıcı otomasyonuyla (API'siz) tarayıp Ankara–Paris direkt uçuş alternatiflerini fiyata göre sıralayan agent",
   "main": "src/agent.js",
-  "bin": { "flight-agent": "src/agent.js" },
+  "bin": {
+    "flight-agent": "src/agent.js"
+  },
   "scripts": {
     "start": "node src/agent.js",
-    "scan": "node src/agent.js --config config.json"
+    "scan": "node src/agent.js --config config.json",
+    "discover": "node src/discover.js"
   },
   "license": "MIT",
   "dependencies": {

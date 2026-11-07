@@ -60,6 +60,24 @@ Tüm seçenekler: `--config, --from, --to, --start, --end, --min-stay, --max-sta
 --currency, --concurrency, --min-delay, --max-delay, --cooldown, --max-cooldowns,
 --verify-top, --out, --headed, --no-cache`.
 
+## Keşif modu: bir ülkedeki tüm direkt uçuş noktaları
+
+`src/discover.js`, bir kalkış havalimanından bir ülkedeki **tüm** havalimanlarına
+direkt uçuş olup olmadığını her gün için tarar. Google tek aramada en fazla 7
+varış havalimanına izin verdiği için liste 7'li gruplara bölünür. Direkt uçuş
+bulunan havalimanları için dönüş yönü de taranır ve şehir bazında özet çıkarılır
+(uçuş günleri, saatler, havayolu, en ucuz fiyat).
+
+```bash
+npm run discover                                    # ESB → Fransa, Şubat 2027
+node src/discover.js --from ESB --country FR --start 2027-03-01 --end 2027-03-31
+node src/discover.js --from ESB --airports LYS,MRS,NCE --start 2027-02-01 --end 2027-02-28
+```
+
+Rapor `results/kesif-<kalkış>-<ülke>-<zaman>.md` ve `.json` olarak yazılır.
+Şu an hazır ülke listesi Fransa (`FR`, 44 havalimanı); başka ülkeler için
+`--airports` ile IATA kodları verilebilir.
+
 ## Nezaket ve dayanıklılık
 
 - Sayfalar arasında 3–5 sn rastgele bekleme ve tek sayfa ile çalışır; Google'a

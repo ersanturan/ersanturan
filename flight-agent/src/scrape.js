@@ -20,6 +20,8 @@ async function waitForResults(page, timeout = 45000) {
   );
   let text = await page.evaluate(() => document.body.innerText || '');
   if (BLOCK_RE.test(text)) throw new BlockedError();
+  if (/Too many locations selected/i.test(text)) throw new Error('Google: çok fazla konum seçildi (tek aramada en fazla 7 havalimanı)');
+  if (/Oops, something went wrong/i.test(text) && !(await page.locator(ROW).count())) throw new Error('Google arama hatası ("something went wrong")');
   // Google satırları hemen basıp arka planda sonuç çekmeye devam eder; kısa bir oturma süresi bırak.
   await sleep(2000);
   if (!(await page.locator(ROW).count())) {
