@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node src/agent.js",
     "scan": "node src/agent.js --config config.json",
-    "discover": "node src/discover.js"
+    "discover": "node src/discover.js",
+    "watch": "node src/watch.js"
   },
   "license": "MIT",
   "dependencies": {

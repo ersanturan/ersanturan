@@ -1,0 +1,379 @@
+{
+  "createdAt": "2026-11-07T18:20:31.890Z",
+  "source": "results/son-tarama-cuma-pazartesi.json",
+  "after": "2027-02-01",
+  "origin": [
+    "ESB"
+  ],
+  "destination": [
+    "CDG"
+  ],
+  "passengers": {
+    "adults": 2,
+    "children": 0,
+    "infantsInSeat": 0,
+    "infantsOnLap": 1
+  },
+  "currency": "EUR",
+  "maxStops": 0,
+  "minDropEur": 1,
+  "items": [
+    {
+      "key": "2027-02-05_2027-02-08",
+      "depDate": "2027-02-05",
+      "retDate": "2027-02-08",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:20 PM",
+        "arrTime": "3:35 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "4:35 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 874,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-02-12_2027-02-15",
+      "depDate": "2027-02-12",
+      "retDate": "2027-02-15",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:20 PM",
+        "arrTime": "3:35 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "4:35 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 839,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-02-19_2027-02-22",
+      "depDate": "2027-02-19",
+      "retDate": "2027-02-22",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:20 PM",
+        "arrTime": "3:35 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "4:35 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 1003,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-02-26_2027-03-01",
+      "depDate": "2027-02-26",
+      "retDate": "2027-03-01",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:20 PM",
+        "arrTime": "3:35 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "4:35 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 935,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-03-05_2027-03-08",
+      "depDate": "2027-03-05",
+      "retDate": "2027-03-08",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:20 PM",
+        "arrTime": "3:35 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "4:35 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 1133,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-03-12_2027-03-15",
+      "depDate": "2027-03-12",
+      "retDate": "2027-03-15",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:20 PM",
+        "arrTime": "3:35 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "4:35 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 1030,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-03-19_2027-03-22",
+      "depDate": "2027-03-19",
+      "retDate": "2027-03-22",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:20 PM",
+        "arrTime": "3:35 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "4:35 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 848,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-03-26_2027-03-29",
+      "depDate": "2027-03-26",
+      "retDate": "2027-03-29",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:20 PM",
+        "arrTime": "3:35 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "5:40 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 1148,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-04-02_2027-04-05",
+      "depDate": "2027-04-02",
+      "retDate": "2027-04-05",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:30 PM",
+        "arrTime": "4:40 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "5:40 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 1033,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-04-09_2027-04-12",
+      "depDate": "2027-04-09",
+      "retDate": "2027-04-12",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:30 PM",
+        "arrTime": "4:40 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "5:40 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 930,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-04-16_2027-04-19",
+      "depDate": "2027-04-16",
+      "retDate": "2027-04-19",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:30 PM",
+        "arrTime": "4:40 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "5:40 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 1196,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-04-23_2027-04-26",
+      "depDate": "2027-04-23",
+      "retDate": "2027-04-26",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:30 PM",
+        "arrTime": "4:40 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "5:40 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 1142,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-04-30_2027-05-03",
+      "depDate": "2027-04-30",
+      "retDate": "2027-05-03",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:30 PM",
+        "arrTime": "4:40 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "5:40 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 1097,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-05-07_2027-05-10",
+      "depDate": "2027-05-07",
+      "retDate": "2027-05-10",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:30 PM",
+        "arrTime": "4:40 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "5:40 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 954,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-05-14_2027-05-17",
+      "depDate": "2027-05-14",
+      "retDate": "2027-05-17",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:30 PM",
+        "arrTime": "4:40 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "5:40 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 1002,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-05-21_2027-05-24",
+      "depDate": "2027-05-21",
+      "retDate": "2027-05-24",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:30 PM",
+        "arrTime": "4:40 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "5:40 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 1118,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    },
+    {
+      "key": "2027-05-28_2027-05-31",
+      "depDate": "2027-05-28",
+      "retDate": "2027-05-31",
+      "outbound": {
+        "airline": "AJet",
+        "depTime": "1:30 PM",
+        "arrTime": "4:40 PM",
+        "depAirport": "ESB",
+        "arrAirport": "CDG"
+      },
+      "inbound": {
+        "airline": "AJet",
+        "depTime": "5:40 PM",
+        "arrTime": "10:25 PM",
+        "depAirport": "CDG",
+        "arrAirport": "ESB"
+      },
+      "baseline": 1069,
+      "baselineAt": "2026-11-07T18:12:16.304Z"
+    }
+  ]
+}

@@ -78,6 +78,36 @@ Rapor `results/kesif-<kalkış>-<ülke>-<zaman>.md` ve `.json` olarak yazılır.
 Şu an hazır ülke listesi Fransa (`FR`, 44 havalimanı); başka ülkeler için
 `--airports` ile IATA kodları verilebilir.
 
+## Fiyat takibi: düşüşte haber ver
+
+`src/watch.js`, bir tarama raporundaki gidiş-dönüş kombinasyonlarını her
+çalıştırıldığında yeniden fiyatlar. Her kombinasyon için Google Flights'ta
+gidiş-dönüş araması açar, aynı uçuşları seçer ve güncel toplamı okur. Sonucu
+bir önceki kontrolle karşılaştırır. AJet saatleri değiştirirse aynı havayolunun
+o günkü tek direkt uçuşuyla eşleştirir ve bunu raporda belirtir.
+
+```bash
+# Bir kez: Cuma–Pazartesi listesinden 1 Şubat sonrasını izlemeye al
+node src/watch.js --init results/son-tarama-cuma-pazartesi.json --after 2027-02-01 [--min-drop 1]
+
+# Her gün
+npm run watch
+```
+
+Çıktılar `results/watch/` altında:
+
+| Dosya | İçerik |
+|---|---|
+| `watchlist.json` | İzlenen kombinasyonlar, uçuşlar ve başlangıç fiyatları |
+| `history.json` | Her kontrolün fiyatları |
+| `son-kontrol.md` | Son kontrolün tablosu: şimdi, önceki, değişim, başlangıç, en düşük, link |
+| `alert.md` | Yalnızca en az `--min-drop` € düşüş varsa oluşur; bildirim metni |
+
+Son satırdaki `WATCH_SUMMARY {...}` JSON'u düşüşleri makine-okunur verir.
+Tarihi geçen kombinasyonlar otomatik atlanır. Günlük çalıştırma bir Claude
+zamanlanmış görevi ile yapılır: görev komutu çalıştırır, geçmişi repoya
+commit'ler ve düşüş varsa telefona bildirim gönderir.
+
 ## Nezaket ve dayanıklılık
 
 - Sayfalar arasında 3–5 sn rastgele bekleme ve tek sayfa ile çalışır; Google'a

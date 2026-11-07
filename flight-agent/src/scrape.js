@@ -100,7 +100,7 @@ async function scanOneWay(page, { date, from, to, maxStops, passengers, seat, cu
  * Gidiş-dönüş aramasında verilen gidiş + dönüş uçuşunu seçerek Google'ın
  * gösterdiği gerçek gidiş-dönüş toplam fiyatını okur.
  */
-async function verifyRoundTrip(page, { outbound, inbound, from, to, maxStops, passengers, seat, currency }) {
+async function verifyRoundTrip(page, { outbound, inbound, from, to, maxStops, passengers, seat, currency, loose = false }) {
   const url = buildSearchUrl({
     legs: [{ date: outbound.date, from, to, maxStops }, { date: inbound.date, from: to, to: from, maxStops }],
     passengers, seat, trip: 'roundTrip',
@@ -112,6 +112,8 @@ async function verifyRoundTrip(page, { outbound, inbound, from, to, maxStops, pa
     await expandAll(page);
     outRows = await readRows(page);
     outIdx = outRows.findIndex(f => sameFlight(f, outbound));
+    // Gevşek eşleşme: saat değişmişse aynı havayolunun o günkü tek uçuşunu kullan.
+    if (outIdx < 0 && loose) { const same = outRows.filter(f => f.airline === outbound.airline); if (same.length === 1) outIdx = outRows.indexOf(same[0]); }
   }
   if (outIdx < 0) return { ok: false, reason: 'gidiş uçuşu gidiş-dönüş aramasında bulunamadı', searchUrl: url, outboundFrom: outRows[0]?.price ?? null };
   const rowLoc = page.locator(`${ROW}:visible`).nth(outIdx);
@@ -120,9 +122,13 @@ async function verifyRoundTrip(page, { outbound, inbound, from, to, maxStops, pa
   await sleep(jitter(800, 1500));
   await expandAll(page);
   const inRows = await readRows(page);
-  const match = inRows.find(f => sameFlight(f, inbound));
+  let match = inRows.find(f => sameFlight(f, inbound));
+  if (!match && loose) { const same = inRows.filter(f => f.airline === inbound.airline); if (same.length === 1) match = same[0]; }
   if (!match) return { ok: false, reason: 'dönüş uçuşu gidiş-dönüş aramasında bulunamadı', searchUrl: url, outboundFrom: outRows[outIdx].price };
-  return { ok: true, total: match.price, currency: match.currency, searchUrl: url, selectionUrl: page.url(), noCarryOn: match.noCarryOn };
+  const out = outRows[outIdx];
+  return { ok: true, total: match.price, currency: match.currency, searchUrl: url, selectionUrl: page.url(), noCarryOn: match.noCarryOn,
+    outboundFlight: `${out.airline} ${out.depTime}–${out.arrTime}`, inboundFlight: `${match.airline} ${match.depTime}–${match.arrTime}`,
+    scheduleChanged: !sameFlight(out, outbound) || !sameFlight(match, inbound) };
 }
 
 module.exports = { scanOneWay, verifyRoundTrip, BlockedError, setPacing };
