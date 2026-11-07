@@ -165,7 +165,9 @@ async function check(args, dir) {
 
   // Bildirim / e-posta
   let notified = null;
-  const wantEmail = !!args.email, viaSendGrid = wantEmail && !!process.env.SENDGRID_API_KEY;
+  const wantEmail = !!args.email;
+  // SendGrid: anahtar ortamda ya da proxy'nin ağ gizli anahtarında olabilir; gönderici tanımlıysa SendGrid kullanılır.
+  const viaSendGrid = wantEmail && !!(process.env.SENDGRID_API_KEY || process.env.SENDGRID_FROM || args['email-from']);
   // Bildirim koşulu: --notify-on change (varsayılan: düşüş veya artış), drop (yalnız düşüş), always (her gün).
   const notifyOn = args['email-always'] ? 'always' : (args['notify-on'] || 'change');
   const shouldNotify = notifyOn === 'always' || drops.length > 0 || (notifyOn === 'change' && rises.length > 0);

@@ -125,7 +125,9 @@ NTFY_TOKEN=tk_... node src/watch.js --ntfy-topic <konu> --email adres@ornek.com 
 
 SendGrid ile e-posta (önerilen): `SENDGRID_API_KEY` ve doğrulanmış gönderici
 `SENDGRID_FROM` ortam değişkenleri tanımlıysa e-posta SendGrid ile gider; ntfy
-hesabı gerekmez. Anahtarı ortam ayarlarına gizli değişken olarak ekleyin.
+hesabı gerekmez. Claude bulut ortamında anahtarı ortam ayarlarındaki "Network secrets"
+bölümüne **Bearer** türünde, ana makine `api.sendgrid.com` olarak ekleyin; proxy
+başlığı kendisi ekler ve `SENDGRID_API_KEY` tanımlamak gerekmez.
 
 ```bash
 SENDGRID_FROM=gonderen@alanadi.com node src/watch.js --email alici@ornek.com [--ntfy-topic <konu>]
