@@ -103,10 +103,14 @@ async function verifyRoundTrip(page, { outbound, inbound, from, to, maxStops, pa
     legs: [{ date: outbound.date, from, to, maxStops }, { date: inbound.date, from: to, to: from, maxStops }],
     passengers, seat, trip: 'roundTrip',
   }, { currency });
-  await gotoSearch(page, url);
-  await expandAll(page);
-  const outRows = await readRows(page);
-  const outIdx = outRows.findIndex(f => f.airline === outbound.airline && f.depTime === outbound.depTime && f.arrTime === outbound.arrTime);
+  let outRows = [], outIdx = -1;
+  const sameFlight = (f, g) => f.airline === g.airline && f.depTime === g.depTime && f.arrTime === g.arrTime;
+  for (let attempt = 1; attempt <= 2 && outIdx < 0; attempt++) {
+    await gotoSearch(page, url);
+    await expandAll(page);
+    outRows = await readRows(page);
+    outIdx = outRows.findIndex(f => sameFlight(f, outbound));
+  }
   if (outIdx < 0) return { ok: false, reason: 'gidiş uçuşu gidiş-dönüş aramasında bulunamadı', searchUrl: url, outboundFrom: outRows[0]?.price ?? null };
   const rowLoc = page.locator(`${ROW}:visible`).nth(outIdx);
   await rowLoc.locator('div.yR1fYc').first().click({ timeout: 15000 });
@@ -114,7 +118,7 @@ async function verifyRoundTrip(page, { outbound, inbound, from, to, maxStops, pa
   await sleep(jitter(800, 1500));
   await expandAll(page);
   const inRows = await readRows(page);
-  const match = inRows.find(f => f.airline === inbound.airline && f.depTime === inbound.depTime && f.arrTime === inbound.arrTime);
+  const match = inRows.find(f => sameFlight(f, inbound));
   if (!match) return { ok: false, reason: 'dönüş uçuşu gidiş-dönüş aramasında bulunamadı', searchUrl: url, outboundFrom: outRows[outIdx].price };
   return { ok: true, total: match.price, currency: match.currency, searchUrl: url, selectionUrl: page.url(), noCarryOn: match.noCarryOn };
 }

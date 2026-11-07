@@ -139,6 +139,27 @@ async function main() {
   }
   for (const t of tasks) if (t.error) warnings.push(`${t.label} taranamadı: ${t.error.split('\n')[0]}`);
 
+  // Şüpheli sıfırlar: aynı haftagününde başka haftalarda uçuş varken 0 dönen günler
+  // (hız sınırı anında gelen boş sayfa olabilir) önbellek atlanarak bir kez daha taranır.
+  const weekday = d => new Date(d + 'T00:00:00Z').getUTCDay();
+  const recheck = [];
+  for (const dir of ['outbound', 'inbound']) {
+    const days = new Set(Object.entries(oneWay[dir]).filter(([, f]) => f.length).map(([d]) => weekday(d)));
+    for (const [d, f] of Object.entries(oneWay[dir])) if (!f.length && days.has(weekday(d))) recheck.push(tasks.find(t => t.dir === dir && t.date === d));
+  }
+  if (recheck.length && !warnings.some(w => /captcha/.test(w))) {
+    log(`${recheck.length} şüpheli boş gün yeniden kontrol ediliyor: ${recheck.map(t => t.label).join(', ')}`);
+    try {
+      await runPool(context, recheck, poolOpts, async (page, t) => {
+        const key = `oneway_${t.dir}_${t.from.join('-')}_${t.to.join('-')}_${t.date}_${cfg.currency}_${JSON.stringify(cfg.passengers)}_${cfg.maxStops}`;
+        const res = await scanOneWay(page, { date: t.date, from: t.from, to: t.to, ...legOpts });
+        writeCache(key, res);
+        oneWay[t.dir][t.date] = res.flights;
+        log(`  yeniden ${t.label}: ${res.flights.length} direkt uçuş${res.flights.length ? ' – ' + res.flights.map(f => `${f.airline} ${f.depTime} ${f.price} ${f.currency}`).join('; ') : ''}`);
+      });
+    } catch (e) { if (e instanceof BlockedError) warnings.push('Yeniden kontrol sırasında: ' + e.message); else throw e; }
+  }
+
   const combos = combine({ outbound: oneWay.outbound, inbound: oneWay.inbound, minStay: cfg.minStay, maxStay: cfg.maxStay });
   for (const c of combos) {
     c.searchUrl = buildSearchUrl({
@@ -157,7 +178,7 @@ async function main() {
       await runPool(context, toVerify.map((c, i) => ({ c, label: `doğrulama #${i + 1} ${c.depDate}→${c.retDate}` })), poolOpts, async (page, t) => {
         const key = `rt_${t.c.depDate}_${t.c.retDate}_${t.c.outbound.airline}_${t.c.outbound.depTime}_${t.c.inbound.depTime}_${cfg.currency}_${JSON.stringify(cfg.passengers)}`;
         let r = readCache(key);
-        if (!r) { r = await verifyRoundTrip(page, { outbound: t.c.outbound, inbound: t.c.inbound, from: cfg.origin, to: cfg.destination, ...legOpts }); writeCache(key, r); }
+        if (!r || !r.ok) { r = await verifyRoundTrip(page, { outbound: t.c.outbound, inbound: t.c.inbound, from: cfg.origin, to: cfg.destination, ...legOpts }); writeCache(key, r); }
         t.c.verified = r;
         v++;
         log(`[${v}/${toVerify.length}] ${t.label}: tek yön toplamı ${t.c.oneWaySum} → gidiş-dönüş ${r.ok ? r.total + ' ' + r.currency : 'doğrulanamadı (' + r.reason + ')'}`);
