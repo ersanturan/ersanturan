@@ -16,6 +16,11 @@
  *   son-kontrol.md  son kontrolün okunur raporu
  *   alert.md        yalnızca düşüş varsa: bildirim metni (yoksa silinir)
  * Son satırda makine-okunur özet basılır:  WATCH_SUMMARY {"drops":[...], ...}
+ *
+ * Bildirim (isteğe bağlı): --ntfy-topic <gizli-konu> [--email adres] [--email-always]
+ *   E-posta iletimi ntfy.sh hesabı ister: erişim anahtarı NTFY_TOKEN ortam değişkeniyle verilir.
+ *   Düşüş varsa (veya --email-always ile her kontrolde) ntfy.sh üzerinden bildirim ve
+ *   e-posta gönderilir. Repo herkese açıksa adres ve konu repoya yazılmamalı, parametreyle verilmeli.
  */
 const fs = require('fs');
 const path = require('path');
@@ -23,6 +28,7 @@ const { launchBrowser } = require('./browser');
 const { verifyRoundTrip, BlockedError, setPacing } = require('./scrape');
 const { runPool, log } = require('./pool');
 const { weekdayTr } = require('./combine');
+const { sendNtfy } = require('./notify');
 
 function parseArgs(argv) {
   const a = {};
@@ -90,9 +96,8 @@ async function check(args, dir) {
   const { browser, context } = await launchBrowser();
   try {
     let n = 0;
-    await runPool(context, active.map(i => ({ i, label: `${i.depDate}→${i.retDate}` })),
-      { concurrency: 1, cooldownSec: Number(args.cooldown ?? 120), maxCooldowns: Number(args['max-cooldowns'] ?? 6) },
-      async (page, t) => {
+    const poolOpts = { concurrency: 1, cooldownSec: Number(args.cooldown ?? 120), maxCooldowns: Number(args['max-cooldowns'] ?? 6) };
+    const worker = async (page, t) => {
         const r = await verifyRoundTrip(page, {
           outbound: { ...t.i.outbound, date: t.i.depDate }, inbound: { ...t.i.inbound, date: t.i.retDate }, from: wl.origin, to: wl.destination, maxStops: wl.maxStops,
           passengers: wl.passengers, seat: 'economy', currency: wl.currency, loose: true,
@@ -101,7 +106,15 @@ async function check(args, dir) {
           ? { ok: true, total: r.total, link: r.selectionUrl, scheduleChanged: r.scheduleChanged, outboundFlight: r.outboundFlight, inboundFlight: r.inboundFlight }
           : { ok: false, reason: r.reason, link: r.searchUrl };
         log(`[${++n}/${active.length}] ${t.label}: ${r.ok ? `${r.total} ${wl.currency} (önceki ${last[t.i.key]?.total ?? '-'})` : `bulunamadı – ${r.reason}`}`);
-      });
+    };
+    await runPool(context, active.map(i => ({ i, label: `${i.depDate}→${i.retDate}` })), poolOpts, worker);
+    // Zaman aşımı vb. nedeniyle okunamayanları bir kez daha dene.
+    const retry = active.filter(i => !prices[i.key] || !prices[i.key].ok);
+    if (retry.length) {
+      log(`${retry.length} kombinasyon yeniden deneniyor`);
+      n = active.length - retry.length;
+      await runPool(context, retry.map(i => ({ i, label: `${i.depDate}→${i.retDate} (tekrar)` })), poolOpts, worker);
+    }
   } catch (e) {
     if (e instanceof BlockedError) warnings.push(e.message); else throw e;
   } finally { await browser.close(); }
@@ -146,11 +159,36 @@ async function check(args, dir) {
     fs.writeFileSync(alertPath, a.join('\n') + '\n');
   } else if (fs.existsSync(alertPath)) fs.unlinkSync(alertPath);
 
+  // Bildirim / e-posta
+  let notified = null;
+  if (args['ntfy-topic'] && (drops.length || args['email-always'])) {
+    const lines = [];
+    if (drops.length) {
+      lines.push(`Fiyatı düşen ${drops.length} tarih (2 yetişkin + 1 bebek, gidiş-dönüş toplam):`, '');
+      for (const d of drops.sort((x, y) => x.now - y.now)) {
+        lines.push(`• ${fmtDate(d.depDate)} → ${fmtDate(d.retDate)}: ${d.prev} → ${d.now} ${cur} (${d.diff} ${cur})${d.now <= d.lowest ? ' – şimdiye kadarki en düşük' : ''}`);
+        if (d.link) lines.push(`  ${d.link}`);
+      }
+    } else lines.push('Bugün fiyat düşüşü yok.');
+    lines.push('');
+    if (cheapest) lines.push(`Şu an en ucuz Cuma–Pazartesi: ${fmtDate(cheapest.depDate)} → ${fmtDate(cheapest.retDate)}, ${cheapest.now} ${cur}`);
+    lines.push(`Kontrol edilen: ${rows.length}, okunamayan: ${unavailable.length}. Uçuşlar AJet direkt ESB–CDG, kabin bagajı dahil değil.`);
+    lines.push('Tüm tablo: https://github.com/ersanturan/ersanturan/blob/HEAD/flight-agent/results/watch/son-kontrol.md');
+    const title = drops.length
+      ? `ESB–CDG fiyat düştü: ${drops.length} tarih, en düşük ${Math.min(...drops.map(d => d.now))} ${cur}`
+      : `ESB–CDG günlük kontrol: düşüş yok, en ucuz ${cheapest ? cheapest.now + ' ' + cur : '-'}`;
+    try {
+      const r = sendNtfy({ topic: args['ntfy-topic'], title, message: lines.join('\n'), email: args.email || undefined, click: drops[0]?.link, tags: drops.length ? 'airplane,chart_with_downwards_trend' : 'airplane' });
+      notified = { ok: true, id: r.id, email: !!args.email };
+      log(`Bildirim gönderildi${args.email ? ' (e-posta dahil)' : ''}: ${r.id}`);
+    } catch (e) { notified = { ok: false, error: String(e.stderr || e.message).slice(0, 300) }; log(`!! Bildirim gönderilemedi: ${notified.error}`); }
+  }
+
   console.log(md.slice(0, 6).join('\n'));
   const summary = {
     at, checked: rows.length, ok: rows.length - unavailable.length, unavailable: unavailable.length, warnings,
     drops: drops.map(d => ({ depDate: d.depDate, retDate: d.retDate, prev: d.prev, now: d.now, diff: d.diff, allTimeLow: d.now <= d.lowest, link: d.link })),
-    cheapest: cheapest ? { depDate: cheapest.depDate, retDate: cheapest.retDate, now: cheapest.now } : null, currency: cur,
+    cheapest: cheapest ? { depDate: cheapest.depDate, retDate: cheapest.retDate, now: cheapest.now } : null, currency: cur, notified,
   };
   console.log('WATCH_SUMMARY ' + JSON.stringify(summary));
 }

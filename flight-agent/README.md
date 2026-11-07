@@ -104,6 +104,18 @@ npm run watch
 | `alert.md` | Yalnızca en az `--min-drop` € düşüş varsa oluşur; bildirim metni |
 
 Son satırdaki `WATCH_SUMMARY {...}` JSON'u düşüşleri makine-okunur verir.
+
+Bildirim için ntfy.sh kullanılır, ayrı bir servis kurulumu gerekmez:
+
+```bash
+node src/watch.js --ntfy-topic <tahmin-edilemez-konu>                       # ntfy uygulamasına anlık bildirim
+NTFY_TOKEN=tk_... node src/watch.js --ntfy-topic <konu> --email adres@ornek.com   # + e-posta
+```
+
+- Konuya ntfy uygulamasından ya da `https://ntfy.sh/<konu>` adresinden abone olunur.
+- ntfy.sh hesapsız e-posta göndermeye izin vermez. E-posta için ücretsiz bir
+  ntfy.sh hesabında erişim anahtarı oluşturup `NTFY_TOKEN` olarak verin.
+- Repo herkese açıksa e-posta adresini ve konuyu repoya yazmayın, parametreyle verin.
 Tarihi geçen kombinasyonlar otomatik atlanır. Günlük çalıştırma bir Claude
 zamanlanmış görevi ile yapılır: görev komutu çalıştırır, geçmişi repoya
 commit'ler ve düşüş varsa telefona bildirim gönderir.
