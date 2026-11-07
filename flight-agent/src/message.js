@@ -7,6 +7,11 @@ const shortDate = iso => { const [, m, d] = iso.split('-'); return `${Number(d)}
 const pair = r => `${shortDate(r.depDate)} → ${shortDate(r.retDate)}`;
 const signed = v => (v > 0 ? `+${v}` : `${v}`);
 const pct = (diff, base) => (base ? `${diff > 0 ? '+' : diff < 0 ? '-' : ''}%${Math.abs(diff / base * 100).toFixed(1).replace('.', ',')}` : '');
+// "1:20 PM" → "13:20"
+const to24 = t => { const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)?/i.exec(t || ''); if (!m) return t || ''; let h = Number(m[1]); const ap = (m[3] || '').toUpperCase();
+  if (ap === 'PM' && h < 12) h += 12; if (ap === 'AM' && h === 12) h = 0; return `${String(h).padStart(2, '0')}:${m[2]}`; };
+const flightTimes = f => (f ? `${f.airline} ${to24(f.depTime)}–${to24(f.arrTime)}` : '');
+const dayChange = (r, cur) => (r.diff === null || r.diff === undefined ? 'ilk kontrol' : r.diff === 0 ? 'dünden beri değişmedi' : `dünden beri ${r.diff < 0 ? '▼' : '▲'} ${signed(r.diff)} ${cur}`);
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 function describe(r, cur) {
@@ -21,6 +26,8 @@ function describe(r, cur) {
  */
 function buildChangeMessage({ rows, drops, rises, unavailable, cheapest, cur, passengers, reportUrl }) {
   const unchanged = rows.filter(r => r.ok && r.diff === 0);
+  const ranked = rows.filter(r => r.ok && r.now !== null).sort((a, b) => a.now - b.now || a.depDate.localeCompare(b.depDate));
+  const best = ranked[0] || null, next = ranked.slice(1, 3);
   const pax = `${passengers.adults} yetişkin + ${passengers.infantsOnLap} kucakta bebek`;
   const dropsS = drops.slice().sort((a, b) => a.diff - b.diff);
   const risesS = rises.slice().sort((a, b) => b.diff - a.diff);
@@ -30,15 +37,22 @@ function buildChangeMessage({ rows, drops, rises, unavailable, cheapest, cur, pa
   else if (drops.length) title = `ESB–CDG fiyat düştü: ${drops.length} tarih, en düşük ${Math.min(...drops.map(d => d.now))} ${cur}`;
   else if (rises.length) title = `ESB–CDG fiyat arttı: ${rises.length} tarih`;
   else title = `ESB–CDG günlük kontrol: değişiklik yok`;
-  if (cheapest) title += ` · en ucuz ${cheapest.now} ${cur}`;
+  if (cheapest) title += ` · günün en ucuzu ${shortDate(cheapest.depDate)}–${shortDate(cheapest.retDate)} ${cheapest.now} ${cur}`;
 
   // Düz metin
   const t = [];
   t.push(`Ankara (ESB) – Paris (CDG) direkt, Cuma gidiş / Pazartesi dönüş. Fiyatlar ${pax} için gidiş-dönüş toplamıdır (${cur}).`, '');
+  if (best) {
+    t.push('★ GÜNÜN EN UYGUN ALTERNATİFİ');
+    t.push(`  ${pair(best)}: ${best.now} ${cur} (${dayChange(best, cur)})`);
+    t.push(`  Gidiş ${flightTimes(best.outbound)} · Dönüş ${flightTimes(best.inbound)}`);
+    if (best.link) t.push(`  ${best.link}`);
+    if (next.length) t.push(`  Sıradaki en ucuzlar: ${next.map((r, i) => `${i + 2}) ${pair(r)} ${r.now} ${cur}`).join(' · ')}`);
+    t.push('');
+  }
   t.push(`Dünden bugüne: ${drops.length} düşüş, ${rises.length} artış, ${unchanged.length} değişmeyen${unavailable.length ? `, ${unavailable.length} okunamayan` : ''}.`, '');
   if (dropsS.length) { t.push('FİYATI DÜŞENLER'); for (const r of dropsS) t.push(`▼ ${describe(r, cur)}`); t.push(''); }
   if (risesS.length) { t.push('FİYATI ARTANLAR'); for (const r of risesS) t.push(`▲ ${describe(r, cur)}`); t.push(''); }
-  if (cheapest) t.push(`Şu an en ucuz: ${pair(cheapest)}, ${cheapest.now} ${cur}`, '');
   t.push('TÜM TARİHLER (bugün / dün / değişim / ilk fiyat / en düşük)');
   for (const r of rows) {
     if (!r.ok) { t.push(`  ${pair(r)}: okunamadı (${r.reason})`); continue; }
@@ -61,10 +75,19 @@ function buildChangeMessage({ rows, drops, rises, unavailable, cheapest, cur, pa
   const h = [];
   h.push('<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#202124;max-width:720px">');
   h.push(`<p>Ankara (ESB) – Paris (CDG) direkt, <b>Cuma gidiş / Pazartesi dönüş</b>. Fiyatlar ${esc(pax)} için gidiş-dönüş toplamıdır (${cur}).</p>`);
+  if (best) {
+    h.push('<div style="border:2px solid #1a73e8;border-radius:8px;padding:12px 16px;margin:12px 0;background:#e8f0fe">');
+    h.push('<div style="font-size:12px;letter-spacing:.5px;color:#1a73e8;font-weight:700">★ GÜNÜN EN UYGUN ALTERNATİFİ</div>');
+    h.push(`<div style="font-size:18px;margin:6px 0"><b>${esc(pair(best))}</b> — <b style="font-size:22px">${best.now} ${cur}</b></div>`);
+    h.push(`<div style="color:${best.diff ? color(best.diff) : '#5f6368'}">${esc(dayChange(best, cur))}${best.lowest !== undefined && best.now <= best.lowest ? ' · şimdiye kadarki en düşük fiyatı' : ''}</div>`);
+    h.push(`<div style="margin-top:4px">Gidiş ${esc(flightTimes(best.outbound))} · Dönüş ${esc(flightTimes(best.inbound))}</div>`);
+    if (best.link) h.push(`<div style="margin-top:8px"><a href="${esc(best.link)}" style="background:#1a73e8;color:#fff;padding:6px 12px;border-radius:4px;text-decoration:none">Google Flights'ta aç</a></div>`);
+    if (next.length) h.push(`<div style="margin-top:10px;font-size:13px;color:#3c4043">Sıradaki en ucuzlar: ${next.map((r, i) => `${i + 2}) ${esc(pair(r))} <b>${r.now} ${cur}</b>`).join(' · ')}</div>`);
+    h.push('</div>');
+  }
   h.push(`<p style="font-size:15px"><b>Dünden bugüne:</b> <span style="color:#137333">${drops.length} düşüş</span>, <span style="color:#c5221f">${rises.length} artış</span>, ${unchanged.length} değişmeyen${unavailable.length ? `, ${unavailable.length} okunamayan` : ''}.</p>`);
   h.push(list(dropsS, '▼', 'Fiyatı düşenler', '#137333'));
   h.push(list(risesS, '▲', 'Fiyatı artanlar', '#c5221f'));
-  if (cheapest) h.push(`<p style="margin-top:16px">Şu an en ucuz: <b>${esc(pair(cheapest))}, ${cheapest.now} ${cur}</b></p>`);
   h.push('<h3 style="margin:18px 0 6px">Tüm tarihler</h3><table style="border-collapse:collapse;font-size:13px">');
   h.push(`<tr><th ${th}>Cuma → Pazartesi</th><th ${th}>Bugün</th><th ${th}>Dün</th><th ${th}>Değişim</th><th ${th}>İlk fiyat</th><th ${th}>En düşük</th><th ${th}></th></tr>`);
   for (const r of rows) {
@@ -80,7 +103,7 @@ function buildChangeMessage({ rows, drops, rises, unavailable, cheapest, cur, pa
   s.push(`${drops.length} düşüş, ${rises.length} artış, ${unchanged.length} değişmeyen.`);
   for (const r of dropsS.slice(0, 5)) s.push(`▼ ${pair(r)}: ${r.prev} → ${r.now} ${cur}`);
   for (const r of risesS.slice(0, 5)) s.push(`▲ ${pair(r)}: ${r.prev} → ${r.now} ${cur}`);
-  if (cheapest) s.push(`En ucuz: ${pair(cheapest)}, ${cheapest.now} ${cur}`);
+  if (best) s.push(`★ Günün en ucuzu: ${pair(best)}, ${best.now} ${cur} (${dayChange(best, cur)})`);
 
   return { title, text: t.join('\n'), html: h.join(''), short: s.join('\n') };
 }
