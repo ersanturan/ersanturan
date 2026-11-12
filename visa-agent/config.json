@@ -1,0 +1,19 @@
+{
+  "country": "tur",
+  "mission": "fra",
+  "lang": "tr",
+  "centers": ["Ankara"],
+  "category": "kisa|short",
+  "subcategory": "turizm|turist|touris",
+  "earliestDate": null,
+  "latestDate": null,
+  "intervalMinutes": 15,
+  "jitterMinutes": 5,
+  "blockedBackoffMinutes": 120,
+  "humanWaitMinutes": 5,
+  "remindHours": 0,
+  "errorAlertAfter": 3,
+  "errorAlertHours": 6,
+  "headless": false,
+  "browserChannel": "chrome"
+}

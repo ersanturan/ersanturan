@@ -1,0 +1,20 @@
+{
+  "name": "vfs-fransa-randevu-agent",
+  "version": "1.0.0",
+  "description": "VFS Global Fransa vize randevularını gerçek bir tarayıcıyla kontrol eder; uygun randevu açılınca e-posta gönderir",
+  "main": "src/agent.js",
+  "scripts": {
+    "start": "node src/agent.js",
+    "once": "node src/agent.js --once",
+    "test-mail": "node src/agent.js --test-mail",
+    "test": "node --test test/slots.test.js test/e2e.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "nodemailer": "^10.3.1",
+    "playwright": "^1.50.0"
+  }
+}

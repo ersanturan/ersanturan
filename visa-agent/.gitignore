@@ -1,0 +1,5 @@
+node_modules/
+# Şifreler ve kişisel ayarlar: asla repoya girmez
+.env
+# Tarayıcı profili, durum, ekran görüntüleri ve giden e-posta kopyaları (kişisel veri içerebilir)
+state/
