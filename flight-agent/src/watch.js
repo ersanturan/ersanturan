@@ -100,7 +100,7 @@ async function check(args, dir) {
   const { browser, context } = await launchBrowser();
   try {
     let n = 0;
-    const poolOpts = { concurrency: 1, cooldownSec: Number(args.cooldown ?? 120), maxCooldowns: Number(args['max-cooldowns'] ?? 6) };
+    const poolOpts = { concurrency: 1, cooldownSec: Number(args.cooldown ?? 120), maxCooldowns: Number(args['max-cooldowns'] ?? 10) };
     const worker = async (page, t) => {
         const r = await verifyRoundTrip(page, {
           outbound: { ...t.i.outbound, date: t.i.depDate }, inbound: { ...t.i.inbound, date: t.i.retDate }, from: wl.origin, to: wl.destination, maxStops: wl.maxStops,
